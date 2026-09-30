@@ -70,7 +70,7 @@ import { request } from '@/api/client'
 type Row = Record<string, string | number | null>
 
 const ENDPOINT = '/api/sample_registry'
-const columns = ["送检编号", "样品名称", "采样位置", "检测项目", "送检单位", "收样日期", "检测周期", "送检状态"]
+const columns = ["送检编号", "样品名称", "采样位置", "检测项目", "送检单位", "收样日期", "检测周期", "送检状态", "周期阶段", "样本可用性"]
 const actions = ["确认收样", "登记报告", "退回样品"]
 const statuses = ["待收样", "已收样", "检测中", "已出报告"]
 const stats = [{"label": "待收样品", "value": 0}, {"label": "检测中样品", "value": 0}, {"label": "已出报告", "value": 0}]

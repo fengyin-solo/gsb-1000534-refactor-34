@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from app.schemas import ActionResult, EntryPayload, PageResult
 from app.services.sample_registry import SampleRegistryService
@@ -14,6 +17,13 @@ service = SampleRegistryService()
 
 LIST_FIELDS = ["送检编号", "样品名称", "采样位置", "检测项目", "送检单位", "收样日期", "检测周期", "送检状态"]
 STATUSES = ["待收样", "已收样", "检测中", "已出报告"]
+
+
+class _ActionPayload(BaseModel):
+    """动作载荷：兼容前端两种历史形态——{"action": "..."} 与 {"values": {...}}。"""
+
+    action: str | None = None
+    values: dict[str, Any] = Field(default_factory=dict)
 
 
 @router.get("", response_model=PageResult[dict])
@@ -49,9 +59,9 @@ def create_entry(payload: EntryPayload) -> ActionResult:
 
 
 @router.post("/{entry_id}/actions", response_model=ActionResult)
-def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
+def run_action(entry_id: int, payload: _ActionPayload) -> ActionResult:
     """对单条送检样品执行确认收样、登记报告、退回样品；不允许的动作会被拦下并说明原因。"""
-    action = str(payload.values.get("action") or "").strip()
+    action = (payload.action or str(payload.values.get("action") or "")).strip()
     entry, message = service.run_action(entry_id, action)
     if entry is None:
         return ActionResult(ok=False, message=message)

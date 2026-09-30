@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from app.schemas import ActionResult, EntryPayload, PageResult
 from app.services.assay import AssayService
@@ -14,6 +15,13 @@ service = AssayService()
 
 LIST_FIELDS = ["化验编号", "样品编号", "元素名称", "化验值", "单位", "化验方法", "化验日期", "结果状态"]
 STATUSES = ["待录入", "已录入", "已审核", "已退回"]
+
+
+class _ActionPayload(BaseModel):
+    """动作载荷：兼容前端两种历史形态——{"action": "..."} 与 {"values": {...}}。"""
+
+    action: str | None = None
+    values: dict[str, Any] = Field(default_factory=dict)
 
 
 @router.get("", response_model=PageResult[dict])
@@ -49,9 +57,9 @@ def create_entry(payload: EntryPayload) -> ActionResult:
 
 
 @router.post("/{entry_id}/actions", response_model=ActionResult)
-def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
+def run_action(entry_id: int, payload: _ActionPayload) -> ActionResult:
     """对单条化验结果执行录入结果、审核通过、退回修改；不允许的动作会被拦下并说明原因。"""
-    action = str(payload.values.get("action") or "").strip()
+    action = (payload.action or str(payload.values.get("action") or "")).strip()
     entry, message = service.run_action(entry_id, action)
     if entry is None:
         return ActionResult(ok=False, message=message)

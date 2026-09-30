@@ -70,7 +70,7 @@ import { request } from '@/api/client'
 type Row = Record<string, string | number | null>
 
 const ENDPOINT = '/api/assay'
-const columns = ["化验编号", "样品编号", "元素名称", "化验值", "单位", "化验方法", "化验日期", "结果状态"]
+const columns = ["化验编号", "样品编号", "元素名称", "化验值", "单位", "化验方法", "化验日期", "结果状态", "周期阶段", "样本可用性"]
 const actions = ["录入结果", "审核通过", "退回修改"]
 const statuses = ["待录入", "已录入", "已审核", "已退回"]
 const stats = [{"label": "待录入结果", "value": 0}, {"label": "待审核结果", "value": 0}, {"label": "退回结果", "value": 0}]

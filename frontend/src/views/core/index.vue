@@ -70,8 +70,8 @@ import { request } from '@/api/client'
 type Row = Record<string, string | number | null>
 
 const ENDPOINT = '/api/core'
-const columns = ["岩心编号", "所属钻孔", "取样深度起", "取样深度止", "岩性描述", "采取率", "存放位置", "样本状态"]
-const actions = ["地质编录", "送样分析", "归还原箱"]
+const columns = ["岩心编号", "所属钻孔", "取样深度起", "取样深度止", "岩性描述", "采取率", "存放位置", "样本状态", "周期阶段", "样本可用性"]
+const actions = ["地质编录", "深度复核通过", "深度复核驳回", "送样分析", "归还原箱"]
 const statuses = ["待编录", "已编录", "送样中", "已归还"]
 const stats = [{"label": "待编录岩心", "value": 0}, {"label": "送样中岩心", "value": 0}, {"label": "本月编录", "value": 0}]
 

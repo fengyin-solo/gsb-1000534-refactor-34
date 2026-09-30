@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from app.schemas import ActionResult, EntryPayload, PageResult
 from app.services.core import CoreService
@@ -48,10 +51,17 @@ def create_entry(payload: EntryPayload) -> ActionResult:
     return ActionResult(ok=True, message="岩心样本已登记", entry=entry)
 
 
+class _ActionPayload(BaseModel):
+    """动作载荷：兼容前端两种历史形态——{"action": "..."} 与 {"values": {...}}。"""
+
+    action: str | None = None
+    values: dict[str, Any] = Field(default_factory=dict)
+
+
 @router.post("/{entry_id}/actions", response_model=ActionResult)
-def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
+def run_action(entry_id: int, payload: _ActionPayload) -> ActionResult:
     """对单条岩心样本执行地质编录、送样分析、归还原箱；不允许的动作会被拦下并说明原因。"""
-    action = str(payload.values.get("action") or "").strip()
+    action = (payload.action or str(payload.values.get("action") or "")).strip()
     entry, message = service.run_action(entry_id, action)
     if entry is None:
         return ActionResult(ok=False, message=message)
