@@ -1,9 +1,14 @@
-"""岩心管理业务规则：状态流转、字段校验与筛选口径都收在这里。"""
+"""岩心管理业务规则。
+
+重构后这里不再自维护状态/可用性判断，统一委托“样本周期”领域能力
+（app.domain.sample_cycle）。委托门面保持原有方法签名与返回形态，
+router 层与前端接口零改动；灰度 off/shadow/on 由领域门面统一切换。
+"""
 from __future__ import annotations
 
 from typing import Any
 
-from app.store import store
+from app.domain.sample_cycle.service import service_for
 
 MODULE = "core"
 REQUIRED_FIELDS = ["岩心编号", "所属钻孔", "取样深度起"]
@@ -11,8 +16,12 @@ STATUS_ORDER = ["待编录", "已编录", "送样中", "已归还"]
 ACTION_RULES = {"地质编录": "已编录", "送样分析": "送样中", "归还原箱": "已归还"}
 NEGATIVE_ACTIONS = []
 
+_unified = service_for(MODULE)
+
 
 class CoreService:
+    """岩心台账服务：样本周期门面的薄封装（接口形态与重构前一致）。"""
+
     def list_entries(
         self,
         *,
@@ -21,41 +30,18 @@ class CoreService:
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[dict[str, Any]], int]:
-        rows = store.rows(MODULE)
-        if keyword:
-            rows = [row for row in rows if keyword in str(row.get("岩心编号", ""))]
-        if status:
-            rows = [row for row in rows if row.get("status") == status]
-        total = len(rows)
-        start = max(page - 1, 0) * size
-        return rows[start:start + size], total
+        return _unified.list_entries(keyword=keyword, status=status, page=page, size=size)
+
+    def all_entries(self) -> list[dict[str, Any]]:
+        return _unified.all_entries()
 
     def get_entry(self, entry_id: int) -> dict[str, Any] | None:
-        return store.find(MODULE, entry_id)
+        return _unified.get_entry(entry_id)
 
     def create_entry(self, values: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str]]:
-        missing = [field for field in REQUIRED_FIELDS if not str(values.get(field) or "").strip()]
-        if missing:
-            return None, missing
-        rows = store.rows(MODULE)
-        entry = {"id": max((int(row.get("id", 0)) for row in rows), default=0) + 1}
-        entry.update({field: values.get(field) for field in REQUIRED_FIELDS})
-        entry["status"] = STATUS_ORDER[0]
-        entry["pending"] = True
-        entry["abnormal"] = False
-        rows.append(entry)
-        return entry, []
+        return _unified.create_entry(values)
 
-    def run_action(self, entry_id: int, action: str) -> tuple[dict[str, Any] | None, str]:
-        entry = store.find(MODULE, entry_id)
-        if entry is None:
-            return None, f"岩心样本 {entry_id} 不存在或已归档"
-        if action not in ACTION_RULES:
-            return None, f"动作「{action}」不属于岩心管理可执行范围"
-        target = ACTION_RULES[action]
-        if target not in STATUS_ORDER:
-            return None, f"目标状态「{target}」不在允许的状态序列里"
-        entry["status"] = target
-        entry["pending"] = target != STATUS_ORDER[-1]
-        entry["abnormal"] = action in NEGATIVE_ACTIONS
-        return entry, f"岩心样本已{action}"
+    def run_action(
+        self, entry_id: int, action: str, idempotency_key: str | None = None
+    ) -> tuple[dict[str, Any] | None, str]:
+        return _unified.run_action(entry_id, action, idempotency_key=idempotency_key)

@@ -74,3 +74,19 @@ npm run dev
   `backend/app/routers/<模块>.py`，业务规则在 `backend/app/services/<模块>.py`。
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
+
+## 样本周期（岩心 / 送样 / 化验三处统一）
+
+岩心台账（`core`）、送样清单（`sample_registry`）、化验待办（`assay`）的可用性判断
+已重构为统一的“样本周期”领域能力，位于 `backend/app/domain/sample_cycle/`，
+三处旧接口形态保持不变。灰度开关由环境变量 `SAMPLE_CYCLE_MODE` 控制
+（`off` 默认旧路径 / `shadow` 双读留痕 / `on` 周期主导），也可通过
+`POST /api/sample-cycles/mode` 运行时切换。回填、双读差异与回滚操作见
+`backend/docs/sample-cycle-refactor.md`。
+
+## 测试
+
+```bash
+cd backend
+python -m pytest tests/ -q
+```
